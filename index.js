@@ -89,7 +89,7 @@ function buildSummary(){
   }
 
   lines.push("_`-Bhorgolpäls` tar bort din egen beställning._");
-  lines.push("_Admin: `!beställningar rensa` tömmer hela listan._");
+  lines.push("_Admin: `!beställningar rensa` tömmer listan · `!Ny` startar en helt ny lista._");
   return lines.join("\n");
 }
 
@@ -137,6 +137,31 @@ client.on("messageCreate",async message=>{
 
     const content=message.content.trim();
 
+    // ADMIN: !Ny
+    // Töm alla beställningar, radera den gamla sammanställningen
+    // och posta en helt ny beställningslista längst ner i kanalen.
+    if(
+      content.toLowerCase()==="!ny" &&
+      message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)
+    ){
+      data.orders={};
+
+      if(data.summaryMessageId){
+        try{
+          const oldSummary=await message.channel.messages.fetch(data.summaryMessageId);
+          await oldSummary.delete();
+        }catch{}
+      }
+
+      data.summaryMessageId=null;
+      saveData();
+
+      await message.delete().catch(()=>{});
+      await updateSummary(message.channel);
+      return;
+    }
+
+    // Befintligt admin-kommando: töm listan men behåll samma sammanställningsmeddelande.
     if(
       content.toLowerCase()==="!beställningar rensa" &&
       message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)
